@@ -21,7 +21,7 @@ There's no test runner set up yet, so there's no Jest config and there are no te
 
 ## Architecture
 
-- **Routing**: `src/app/_layout.tsx` wraps everything in `<SQLiteProvider>` and renders a header-less `Stack`. `index.tsx` is the dashboard. `add-transaction.tsx` is a modal that takes a `type` param (`INCOME`/`EXPENSE`). Screens draw their own headers. Web output is `server` mode with async routes on web.
+- **Routing**: `src/app/_layout.tsx` wraps everything in `<SQLiteProvider>` and renders a header-less `Stack`. `index.tsx` is the dashboard. `add-transaction.tsx` is a modal that takes a `type` param (`INCOME`/`EXPENSE`). `budgets.tsx` is a pushed screen, and `edit-budget.tsx` is a modal. Screens draw their own headers. Web output is `server` mode with async routes on web.
 - **Database**: `src/db/migrations.ts` runs as `SQLiteProvider`'s `onInit` and versions the schema with `PRAGMA user_version`. To change the schema, add a new `if (version < N)` block and bump `DATABASE_VERSION`; never edit existing blocks, because installed apps have already run them. Screens get the database through `useSQLiteContext()`.
 - **Theme system** (a custom one that replaced the Expo template's):
   - `src/constants/theme.ts` exports `lightTheme` / `darkTheme`, each with a `colors` object (background, surface, primary, text, secondaryText, border, income, expense, iconBackground, …).
@@ -32,5 +32,10 @@ There's no test runner set up yet, so there's no Jest config and there are no te
   - `categories.ts` lists the fixed income and expense categories. The category `id` is stored in the database, so ids must never be renamed or removed. Icons come from the category, not from the row.
   - `useDashboardData()` reloads the summary and recent list through `useFocusEffect`, which is how the dashboard refreshes after the add modal closes.
   - The project deliberately has **no mock or sample data**. Don't add any.
+- **Budgets** (`src/features/budgets/`):
+  - Each expense category can have one recurring monthly limit (`budgets` table, schema v2, keyed by category id). Spending is summed per calendar month in local time (`src/utils/month.ts`: `start` inclusive, `end` exclusive).
+  - `overview.ts` holds the pure rules: `budgetStatus` is `ok` below 80%, `warning` from 80% up to the limit, and `over` above it. `buildBudgetOverview` merges stored limits with monthly spending and lists budgeted categories first, most at risk first. Keep business rules here, free of database and React, rather than in screens.
+  - `useBudgetOverview()` reloads on focus, like `useDashboardData()`. The dashboard card and `budgets.tsx` both use it. `edit-budget.tsx` is a modal that takes a `category` param.
+- **Shared components** (`src/components/`): `AmountInput` (formatted COP field and `parseAmountInput`) and `ProgressBar`. Use these instead of rebuilding amount fields or bars per screen.
 - **Path alias**: `@/*` maps to `src/*` and `@/assets/*` maps to `assets/*`. The newer code uses relative imports instead.
-- **Shared components**: the template's `src/components/` folder has been removed. New shared components should go in a fresh `src/components/` and get their colours from `useAppTheme()`. Don't bring back the template's `Colors`/`ThemedText` system.
+- **Component styling**: shared components get their colours from `useAppTheme()`. Don't bring back the old Expo template's `Colors`/`ThemedText` system.

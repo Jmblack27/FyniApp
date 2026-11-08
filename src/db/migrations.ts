@@ -2,7 +2,7 @@ import type { SQLiteDatabase } from "expo-sqlite";
 
 export const DATABASE_NAME = "fyni.db";
 
-const DATABASE_VERSION = 1;
+const DATABASE_VERSION = 2;
 
 /**
  * Runs on app start via <SQLiteProvider onInit>. Uses PRAGMA user_version to
@@ -32,6 +32,18 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
         ON transactions (created_at DESC);
     `);
     version = 1;
+  }
+
+  if (version < 2) {
+    // One recurring monthly limit per expense category id (see categories.ts).
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS budgets (
+        category TEXT PRIMARY KEY NOT NULL,
+        amount INTEGER NOT NULL CHECK (amount > 0),
+        updated_at INTEGER NOT NULL
+      );
+    `);
+    version = 2;
   }
 
   await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);

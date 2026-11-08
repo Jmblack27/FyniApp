@@ -11,6 +11,7 @@ export const lightTheme = {
     border: "#E8EDF2",
     income: "#159A68",
     expense: "#E45B65",
+    warning: "#D98E04",
     iconBackground: "#F0F3F6",
   },
 };
@@ -27,6 +28,7 @@ export const darkTheme = {
     border: "#344452",
     income: "#42C995",
     expense: "#F07880",
+    warning: "#F2B64C",
     iconBackground: "#293744",
   },
 };

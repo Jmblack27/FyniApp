@@ -3,7 +3,11 @@ import { router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { ProgressBar } from "../components/ProgressBar";
 import type { AppTheme } from "../constants/theme";
+import { budgetStatus } from "../features/budgets/overview";
+import { budgetStatusColor } from "../features/budgets/statusColor";
+import { useBudgetOverview } from "../features/budgets/useBudgetOverview";
 import { getCategory } from "../features/transactions/categories";
 import type { TransactionType } from "../features/transactions/types";
 import { useDashboardData } from "../features/transactions/useDashboardData";
@@ -20,6 +24,7 @@ export default function DashboardScreen() {
   const { theme, isDark } = useAppTheme();
   const setMode = useThemeStore((state) => state.setMode);
   const { summary, recent, loading, error } = useDashboardData();
+  const { overview: budgets } = useBudgetOverview();
 
   const styles = createStyles(theme.colors);
 
@@ -136,6 +141,50 @@ export default function DashboardScreen() {
             <Text style={styles.actionText}>Add expense</Text>
           </Pressable>
         </View>
+
+        {/* Budgets */}
+        <Pressable
+          style={styles.budgetCard}
+          onPress={() => router.push("/budgets")}
+          accessibilityRole="button"
+          accessibilityLabel="Open budgets"
+        >
+          <View style={styles.budgetHeader}>
+            <View style={[styles.summaryIcon, styles.budgetIcon]}>
+              <Ionicons
+                name="pie-chart-outline"
+                size={20}
+                color={theme.colors.primary}
+              />
+            </View>
+            <View style={styles.budgetInfo}>
+              <Text style={styles.budgetTitle}>Monthly budgets</Text>
+              <Text style={styles.budgetSubtitle}>
+                {!budgets || budgets.budgetedCount === 0
+                  ? "Set spending limits by category"
+                  : budgets.overCount > 0
+                    ? `${budgets.overCount} over budget`
+                    : `${formatCurrency(budgets.totalSpent)} of ${formatCurrency(budgets.totalLimit)}`}
+              </Text>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={theme.colors.secondaryText}
+            />
+          </View>
+          {budgets && budgets.budgetedCount > 0 && (
+            <ProgressBar
+              progress={budgets.totalSpent / budgets.totalLimit}
+              color={budgetStatusColor(
+                budgets.overCount > 0
+                  ? "over"
+                  : budgetStatus(budgets.totalSpent, budgets.totalLimit),
+                theme.colors,
+              )}
+            />
+          )}
+        </Pressable>
 
         {/* Transactions */}
         <View style={styles.sectionHeader}>
@@ -382,7 +431,37 @@ function createStyles(colors: AppTheme["colors"]) {
     actions: {
       flexDirection: "row",
       gap: 12,
+      marginBottom: 18,
+    },
+    budgetCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 16,
       marginBottom: 30,
+      gap: 14,
+    },
+    budgetHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    budgetIcon: {
+      marginBottom: 0,
+    },
+    budgetInfo: {
+      flex: 1,
+      marginLeft: 12,
+    },
+    budgetTitle: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: "800",
+    },
+    budgetSubtitle: {
+      color: colors.secondaryText,
+      fontSize: 12,
+      marginTop: 4,
     },
     errorText: {
       color: colors.expense,
