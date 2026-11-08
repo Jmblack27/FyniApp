@@ -34,7 +34,14 @@
           "imageWidth": 76
         }
       ],
-      "expo-sqlite"
+      [
+        "expo-sqlite",
+        {
+          "android": {
+            "enableFTS": true
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
