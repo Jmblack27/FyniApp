@@ -1,37 +1,27 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo } from "react";
+import { router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import type { Transaction } from "../features/transactions/types";
+import type { AppTheme } from "../constants/theme";
+import { getCategory } from "../features/transactions/categories";
+import type { TransactionType } from "../features/transactions/types";
+import { useDashboardData } from "../features/transactions/useDashboardData";
 import { useAppTheme } from "../hooks/useApppTheme";
 import { useThemeStore } from "../store/storeTheme";
 import { formatCurrency } from "../utils/formatCurrency";
+import { formatRelativeDay } from "../utils/formatDate";
 
-// No transaction storage exists yet; replace with the real data source.
-const transactions: Transaction[] = [];
+function openAddTransaction(type: TransactionType) {
+  router.push({ pathname: "/add-transaction", params: { type } });
+}
 
 export default function DashboardScreen() {
   const { theme, isDark } = useAppTheme();
   const setMode = useThemeStore((state) => state.setMode);
+  const { summary, recent, loading, error } = useDashboardData();
 
   const styles = createStyles(theme.colors);
-
-  const summary = useMemo(() => {
-    const income = transactions
-      .filter((t) => t.type === "INCOME")
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    const expenses = transactions
-      .filter((t) => t.type === "EXPENSE")
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    return {
-      income,
-      expenses,
-      balance: income - expenses,
-    };
-  }, []);
 
   const toggleTheme = () => {
     setMode(isDark ? "light" : "dark");
@@ -47,11 +37,20 @@ export default function DashboardScreen() {
         <View style={styles.header}>
           <View>
             <Text style={styles.brand}>FYNI</Text>
-            <Text style={styles.greeting}>Hola 👋</Text>
-            <Text style={styles.subtitle}>Este es tu resumen financiero</Text>
+            <Text style={styles.greeting}>Hello 👋</Text>
+            <Text style={styles.subtitle}>
+              Here&apos;s your financial summary
+            </Text>
           </View>
 
-          <Pressable style={styles.themeButton} onPress={toggleTheme}>
+          <Pressable
+            style={styles.themeButton}
+            onPress={toggleTheme}
+            accessibilityRole="button"
+            accessibilityLabel={
+              isDark ? "Switch to light mode" : "Switch to dark mode"
+            }
+          >
             <Ionicons
               name={isDark ? "sunny-outline" : "moon-outline"}
               size={22}
@@ -62,7 +61,7 @@ export default function DashboardScreen() {
 
         {/* Balance */}
         <View style={styles.balanceCard}>
-          <Text style={styles.balanceLabel}>Balance disponible</Text>
+          <Text style={styles.balanceLabel}>Available balance</Text>
 
           <Text style={styles.balanceAmount}>
             {formatCurrency(summary.balance)}
@@ -71,7 +70,7 @@ export default function DashboardScreen() {
           <View style={styles.balanceFooter}>
             <Ionicons name="wallet-outline" size={17} color="#C2DDD3" />
             <Text style={styles.balanceFooterText}>
-              Tu dinero en un solo lugar
+              All your money in one place
             </Text>
           </View>
         </View>
@@ -87,7 +86,7 @@ export default function DashboardScreen() {
               />
             </View>
 
-            <Text style={styles.summaryLabel}>Ingresos</Text>
+            <Text style={styles.summaryLabel}>Income</Text>
 
             <Text style={styles.incomeAmount}>
               {formatCurrency(summary.income)}
@@ -103,7 +102,7 @@ export default function DashboardScreen() {
               />
             </View>
 
-            <Text style={styles.summaryLabel}>Gastos</Text>
+            <Text style={styles.summaryLabel}>Expenses</Text>
 
             <Text style={styles.expenseAmount}>
               {formatCurrency(summary.expenses)}
@@ -111,18 +110,41 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* Transactions */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Últimos movimientos</Text>
+        {/* Quick actions */}
+        <View style={styles.actions}>
+          <Pressable
+            style={[
+              styles.actionButton,
+              { backgroundColor: theme.colors.primary },
+            ]}
+            onPress={() => openAddTransaction("INCOME")}
+            accessibilityRole="button"
+          >
+            <Ionicons name="add-circle-outline" size={21} color="#FFFFFF" />
+            <Text style={styles.actionText}>Add income</Text>
+          </Pressable>
 
-          {transactions.length > 0 && (
-            <Pressable>
-              <Text style={styles.seeAll}>Ver todos</Text>
-            </Pressable>
-          )}
+          <Pressable
+            style={[
+              styles.actionButton,
+              { backgroundColor: theme.colors.expense },
+            ]}
+            onPress={() => openAddTransaction("EXPENSE")}
+            accessibilityRole="button"
+          >
+            <Ionicons name="remove-circle-outline" size={21} color="#FFFFFF" />
+            <Text style={styles.actionText}>Add expense</Text>
+          </Pressable>
         </View>
 
-        {transactions.length === 0 && (
+        {/* Transactions */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Recent transactions</Text>
+        </View>
+
+        {error && <Text style={styles.errorText}>{error}</Text>}
+
+        {!loading && !error && recent.length === 0 && (
           <View style={styles.emptyState}>
             <View style={styles.transactionIcon}>
               <Ionicons
@@ -131,31 +153,34 @@ export default function DashboardScreen() {
                 color={theme.colors.secondaryText}
               />
             </View>
-            <Text style={styles.emptyTitle}>Aún no tienes movimientos</Text>
+            <Text style={styles.emptyTitle}>No transactions yet</Text>
             <Text style={styles.emptySubtitle}>
-              Registra tu primer ingreso o gasto para ver tu resumen
+              Add your first income or expense to see your summary
             </Text>
           </View>
         )}
 
-        {transactions.map((transaction) => {
+        {recent.map((transaction) => {
           const isIncome = transaction.type === "INCOME";
+          const category = getCategory(transaction.category);
 
           return (
             <View key={transaction.id} style={styles.transactionCard}>
               <View style={styles.transactionIcon}>
                 <Ionicons
-                  name={transaction.icon as any}
+                  name={category.icon}
                   size={22}
                   color={theme.colors.text}
                 />
               </View>
 
               <View style={styles.transactionInfo}>
-                <Text style={styles.transactionTitle}>{transaction.title}</Text>
+                <Text style={styles.transactionTitle} numberOfLines={1}>
+                  {transaction.title}
+                </Text>
 
                 <Text style={styles.transactionSubtitle}>
-                  {transaction.category} · {transaction.date}
+                  {category.label} · {formatRelativeDay(transaction.createdAt)}
                 </Text>
               </View>
 
@@ -174,46 +199,13 @@ export default function DashboardScreen() {
           );
         })}
 
-        {/* Quick actions */}
-        <View style={styles.actions}>
-          <Pressable
-            style={[
-              styles.actionButton,
-              { backgroundColor: theme.colors.primary },
-            ]}
-          >
-            <Ionicons name="add-circle-outline" size={21} color="#FFFFFF" />
-            <Text style={styles.actionText}>Ingreso</Text>
-          </Pressable>
-
-          <Pressable
-            style={[
-              styles.actionButton,
-              { backgroundColor: theme.colors.expense },
-            ]}
-          >
-            <Ionicons name="remove-circle-outline" size={21} color="#FFFFFF" />
-            <Text style={styles.actionText}>Gasto</Text>
-          </Pressable>
-        </View>
-
         <Text style={styles.version}>FYNI APP · PERSONAL FINANCE</Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function createStyles(colors: {
-  background: string;
-  surface: string;
-  primary: string;
-  text: string;
-  secondaryText: string;
-  border: string;
-  income: string;
-  expense: string;
-  iconBackground: string;
-}) {
+function createStyles(colors: AppTheme["colors"]) {
   return StyleSheet.create({
     safeArea: {
       flex: 1,
@@ -284,7 +276,7 @@ function createStyles(colors: {
     summaryContainer: {
       flexDirection: "row",
       gap: 12,
-      marginBottom: 30,
+      marginBottom: 18,
     },
     summaryCard: {
       flex: 1,
@@ -329,11 +321,6 @@ function createStyles(colors: {
       fontSize: 17,
       fontWeight: "800",
       color: colors.text,
-    },
-    seeAll: {
-      color: colors.primary,
-      fontWeight: "700",
-      fontSize: 12,
     },
     transactionCard: {
       flexDirection: "row",
@@ -388,13 +375,19 @@ function createStyles(colors: {
       marginTop: 5,
     },
     transactionAmount: {
+      marginLeft: 8,
       fontSize: 12,
       fontWeight: "800",
     },
     actions: {
       flexDirection: "row",
       gap: 12,
-      marginTop: 20,
+      marginBottom: 30,
+    },
+    errorText: {
+      color: colors.expense,
+      fontWeight: "600",
+      marginBottom: 10,
     },
     actionButton: {
       flex: 1,
