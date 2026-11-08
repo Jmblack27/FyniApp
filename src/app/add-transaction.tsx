@@ -14,15 +14,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { AmountInput } from "../components/AmountInput";
 import type { AppTheme } from "../constants/theme";
 import { CATEGORIES } from "../features/transactions/categories";
 import { addTransaction } from "../features/transactions/repository";
 import type { TransactionType } from "../features/transactions/types";
 import { useAppTheme } from "../hooks/useApppTheme";
-import { formatCurrency } from "../utils/formatCurrency";
-
-// 12 digits = up to 999,999,999,999 COP; keeps sums well inside safe integers.
-const MAX_AMOUNT_DIGITS = 12;
 
 export default function AddTransactionScreen() {
   const db = useSQLiteContext();
@@ -33,13 +30,12 @@ export default function AddTransactionScreen() {
   const [type, setType] = useState<TransactionType>(
     params.type === "INCOME" ? "INCOME" : "EXPENSE",
   );
-  const [digits, setDigits] = useState("");
+  const [amount, setAmount] = useState(0);
   const [title, setTitle] = useState("");
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const amount = digits ? Number(digits) : 0;
   const categories = CATEGORIES[type];
   const category = categories.find((c) => c.id === categoryId) ?? null;
   const accent = type === "INCOME" ? theme.colors.income : theme.colors.expense;
@@ -49,12 +45,6 @@ export default function AddTransactionScreen() {
     if (next === type) return;
     setType(next);
     setCategoryId(null); // categories differ per type
-    setError(null);
-  };
-
-  const onAmountChange = (text: string) => {
-    const onlyDigits = text.replace(/\D/g, "").replace(/^0+/, "");
-    setDigits(onlyDigits.slice(0, MAX_AMOUNT_DIGITS));
     setError(null);
   };
 
@@ -135,15 +125,14 @@ export default function AddTransactionScreen() {
 
           {/* Amount */}
           <Text style={styles.label}>Amount</Text>
-          <TextInput
-            value={digits ? formatCurrency(amount) : ""}
-            onChangeText={onAmountChange}
-            placeholder={formatCurrency(0)}
-            placeholderTextColor={theme.colors.secondaryText}
-            keyboardType="number-pad"
+          <AmountInput
+            value={amount}
+            onChange={(next) => {
+              setAmount(next);
+              setError(null);
+            }}
+            color={accent}
             autoFocus
-            style={[styles.amountInput, { color: accent }]}
-            accessibilityLabel="Amount"
           />
 
           {/* Category */}
@@ -265,14 +254,6 @@ function createStyles(colors: AppTheme["colors"]) {
       marginBottom: 10,
       textTransform: "uppercase",
       letterSpacing: 1,
-    },
-    amountInput: {
-      fontSize: 34,
-      fontWeight: "800",
-      paddingVertical: 8,
-      marginBottom: 24,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
     },
     chips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 24 },
     chip: {

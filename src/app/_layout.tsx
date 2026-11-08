@@ -22,6 +22,11 @@ export default function RootLayout() {
           name="add-transaction"
           options={{ presentation: "modal" }}
         />
+        <Stack.Screen name="budgets" />
+        <Stack.Screen
+          name="edit-budget"
+          options={{ presentation: "modal" }}
+        />
       </Stack>
     </SQLiteProvider>
   );
