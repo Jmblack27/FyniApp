@@ -2,12 +2,13 @@ import { useFocusEffect } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
 import { useCallback, useState } from "react";
 
-import { getRecentTransactions, getSummary } from "./repository";
-import type { Transaction, TransactionSummary } from "./types";
+import { getBalance, type BalanceBreakdown } from "../balance/repository";
+import { getRecentTransactions } from "./repository";
+import type { Transaction } from "./types";
 
 const RECENT_LIMIT = 10;
 
-const EMPTY_SUMMARY: TransactionSummary = { income: 0, expenses: 0, balance: 0 };
+const EMPTY_SUMMARY: BalanceBreakdown = { income: 0, expenses: 0, saved: 0, available: 0 };
 
 /**
  * Loads the summary and recent transactions, and reloads every time the
@@ -15,7 +16,7 @@ const EMPTY_SUMMARY: TransactionSummary = { income: 0, expenses: 0, balance: 0 }
  */
 export function useDashboardData() {
   const db = useSQLiteContext();
-  const [summary, setSummary] = useState<TransactionSummary>(EMPTY_SUMMARY);
+  const [summary, setSummary] = useState<BalanceBreakdown>(EMPTY_SUMMARY);
   const [recent, setRecent] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +25,7 @@ export function useDashboardData() {
     useCallback(() => {
       let cancelled = false;
 
-      Promise.all([getSummary(db), getRecentTransactions(db, RECENT_LIMIT)])
+      Promise.all([getBalance(db), getRecentTransactions(db, RECENT_LIMIT)])
         .then(([nextSummary, nextRecent]) => {
           if (cancelled) return;
           setSummary(nextSummary);

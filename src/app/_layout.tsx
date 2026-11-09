@@ -27,6 +27,16 @@ export default function RootLayout() {
           name="edit-budget"
           options={{ presentation: "modal" }}
         />
+        <Stack.Screen name="savings/index" />
+        <Stack.Screen name="savings/[id]" />
+        <Stack.Screen
+          name="savings-form"
+          options={{ presentation: "modal" }}
+        />
+        <Stack.Screen
+          name="savings-move"
+          options={{ presentation: "modal" }}
+        />
       </Stack>
     </SQLiteProvider>
   );

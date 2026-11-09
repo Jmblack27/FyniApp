@@ -19,8 +19,8 @@ export interface NewTransaction {
   amount: number;
 }
 
+/** Totals of recorded transactions only; see features/balance for the available balance. */
 export interface TransactionSummary {
   income: number;
   expenses: number;
-  balance: number;
 }

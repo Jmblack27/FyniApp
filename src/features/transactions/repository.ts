@@ -49,7 +49,7 @@ export async function getSummary(
   );
   const income = row?.income ?? 0;
   const expenses = row?.expenses ?? 0;
-  return { income, expenses, balance: income - expenses };
+  return { income, expenses };
 }
 
 export async function addTransaction(
