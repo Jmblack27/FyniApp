@@ -69,13 +69,19 @@ export default function DashboardScreen() {
           <Text style={styles.balanceLabel}>Available balance</Text>
 
           <Text style={styles.balanceAmount}>
-            {formatCurrency(summary.balance)}
+            {formatCurrency(summary.available)}
           </Text>
 
           <View style={styles.balanceFooter}>
-            <Ionicons name="wallet-outline" size={17} color="#C2DDD3" />
+            <Ionicons
+              name={summary.saved > 0 ? "lock-closed-outline" : "wallet-outline"}
+              size={17}
+              color="#C2DDD3"
+            />
             <Text style={styles.balanceFooterText}>
-              All your money in one place
+              {summary.saved > 0
+                ? `${formatCurrency(summary.saved)} set aside in savings`
+                : "All your money in one place"}
             </Text>
           </View>
         </View>
@@ -142,49 +148,82 @@ export default function DashboardScreen() {
           </Pressable>
         </View>
 
-        {/* Budgets */}
-        <Pressable
-          style={styles.budgetCard}
-          onPress={() => router.push("/budgets")}
-          accessibilityRole="button"
-          accessibilityLabel="Open budgets"
-        >
-          <View style={styles.budgetHeader}>
-            <View style={[styles.summaryIcon, styles.budgetIcon]}>
+        <View style={styles.featureCards}>
+          {/* Budgets */}
+          <Pressable
+            style={styles.featureCard}
+            onPress={() => router.push("/budgets")}
+            accessibilityRole="button"
+            accessibilityLabel="Open budgets"
+          >
+            <View style={styles.featureHeader}>
+              <View style={[styles.summaryIcon, styles.featureIcon]}>
+                <Ionicons
+                  name="pie-chart-outline"
+                  size={20}
+                  color={theme.colors.primary}
+                />
+              </View>
+              <View style={styles.featureInfo}>
+                <Text style={styles.featureTitle}>Monthly budgets</Text>
+                <Text style={styles.featureSubtitle}>
+                  {!budgets || budgets.budgetedCount === 0
+                    ? "Set spending limits by category"
+                    : budgets.overCount > 0
+                      ? `${budgets.overCount} over budget`
+                      : `${formatCurrency(budgets.totalSpent)} of ${formatCurrency(budgets.totalLimit)}`}
+                </Text>
+              </View>
               <Ionicons
-                name="pie-chart-outline"
+                name="chevron-forward"
                 size={20}
-                color={theme.colors.primary}
+                color={theme.colors.secondaryText}
               />
             </View>
-            <View style={styles.budgetInfo}>
-              <Text style={styles.budgetTitle}>Monthly budgets</Text>
-              <Text style={styles.budgetSubtitle}>
-                {!budgets || budgets.budgetedCount === 0
-                  ? "Set spending limits by category"
-                  : budgets.overCount > 0
-                    ? `${budgets.overCount} over budget`
-                    : `${formatCurrency(budgets.totalSpent)} of ${formatCurrency(budgets.totalLimit)}`}
-              </Text>
+            {budgets && budgets.budgetedCount > 0 && (
+              <ProgressBar
+                progress={budgets.totalSpent / budgets.totalLimit}
+                color={budgetStatusColor(
+                  budgets.overCount > 0
+                    ? "over"
+                    : budgetStatus(budgets.totalSpent, budgets.totalLimit),
+                  theme.colors,
+                )}
+              />
+            )}
+          </Pressable>
+
+          {/* Savings */}
+          <Pressable
+            style={styles.featureCard}
+            onPress={() => router.push("/savings")}
+            accessibilityRole="button"
+            accessibilityLabel="Open savings"
+          >
+            <View style={styles.featureHeader}>
+              <View style={[styles.summaryIcon, styles.featureIcon]}>
+                <Ionicons
+                  name="save-outline"
+                  size={20}
+                  color={theme.colors.primary}
+                />
+              </View>
+              <View style={styles.featureInfo}>
+                <Text style={styles.featureTitle}>Savings</Text>
+                <Text style={styles.featureSubtitle}>
+                  {summary.saved > 0
+                    ? `${formatCurrency(summary.saved)} saved`
+                    : "Set money aside for your goals"}
+                </Text>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={theme.colors.secondaryText}
+              />
             </View>
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={theme.colors.secondaryText}
-            />
-          </View>
-          {budgets && budgets.budgetedCount > 0 && (
-            <ProgressBar
-              progress={budgets.totalSpent / budgets.totalLimit}
-              color={budgetStatusColor(
-                budgets.overCount > 0
-                  ? "over"
-                  : budgetStatus(budgets.totalSpent, budgets.totalLimit),
-                theme.colors,
-              )}
-            />
-          )}
-        </Pressable>
+          </Pressable>
+        </View>
 
         {/* Transactions */}
         <View style={styles.sectionHeader}>
@@ -433,32 +472,35 @@ function createStyles(colors: AppTheme["colors"]) {
       gap: 12,
       marginBottom: 18,
     },
-    budgetCard: {
+    featureCards: {
+      gap: 12,
+      marginBottom: 30,
+    },
+    featureCard: {
       backgroundColor: colors.surface,
       borderRadius: 18,
       borderWidth: 1,
       borderColor: colors.border,
       padding: 16,
-      marginBottom: 30,
       gap: 14,
     },
-    budgetHeader: {
+    featureHeader: {
       flexDirection: "row",
       alignItems: "center",
     },
-    budgetIcon: {
+    featureIcon: {
       marginBottom: 0,
     },
-    budgetInfo: {
+    featureInfo: {
       flex: 1,
       marginLeft: 12,
     },
-    budgetTitle: {
+    featureTitle: {
       color: colors.text,
       fontSize: 14,
       fontWeight: "800",
     },
-    budgetSubtitle: {
+    featureSubtitle: {
       color: colors.secondaryText,
       fontSize: 12,
       marginTop: 4,
